@@ -8,6 +8,34 @@
 #include <unistd.h>
 #include <arpa/inet.h>
 #include <errno.h>
+#include <pthread.h>
+
+struct ClientsSockets {
+    int client1;
+    int client2;
+};
+
+void* fromClient1ToClient2(void *socketList){
+    char msg[200];
+    while(1){
+        int rcv = recv(((struct ClientsSockets*) socketList)->client1,&msg,sizeof(msg),0);
+        if(rcv == 0){
+            break;
+        }
+        send(((struct ClientsSockets*) socketList)->client2,&msg,strlen(msg)+1,0);  
+    }
+}
+
+void* fromClient2ToClient1(void *socketList){
+    char msg[200];
+    while(1){
+        int rcv = recv(((struct ClientsSockets*) socketList)->client2,&msg,sizeof(msg),0);
+        if(rcv == 0){
+            break;
+        }
+        send(((struct ClientsSockets*) socketList)->client1,&msg,strlen(msg)+1,0);
+    }   
+}
 
 
 int main(int argc, char const *argv[]){
@@ -30,7 +58,7 @@ int main(int argc, char const *argv[]){
     
     int ID_CLIENT_1 = 1;
     int ID_CLIENT_2 = 2;
-    char msg[200];
+    
 
     int dSock = socket(PF_INET,SOCK_STREAM,0);
 
@@ -72,20 +100,17 @@ int main(int argc, char const *argv[]){
 
         send(socketClient2,&ID_CLIENT_2,sizeof(int),0);
 
-        while(1){
-            recv(socketClient1,&msg,sizeof(msg),0);
-            send(socketClient2,&msg,strlen(msg)+1,0);
-            if(strcmp(msg,"end\n") == 0){
-                break;
-            }
-            recv(socketClient2,&msg,sizeof(msg),0);
-            send(socketClient1,&msg,strlen(msg)+1,0);
-            if(strcmp(msg,"end\n") == 0){
-                break;
-            }
-        }
-        close(socketClient1);
-        close(socketClient2);
+        pthread_t PTh_1To2;
+        pthread_t PTh_2To1;
+
+
+        struct ClientsSockets *socketList = (struct ClientsSockets*) malloc(sizeof(struct ClientsSockets));
+        socketList->client1 = socketClient1;
+        socketList->client2 = socketClient2;
+
+        pthread_create(&PTh_1To2,NULL, fromClient1ToClient2,(void*) socketList);
+        pthread_create(&PTh_2To1,NULL, fromClient2ToClient1,(void*) socketList);
+        
         
     } 
     

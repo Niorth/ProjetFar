@@ -8,6 +8,41 @@
 #include <unistd.h>
 #include <arpa/inet.h>
 #include <errno.h>
+#include <pthread.h>
+
+
+
+void* sendToServer(void* socket){
+    char msg[200];
+    int sock = (int) socket;
+    printf("You can write your messages \n");
+    while(1){
+        fgets(msg,200,stdin); 
+        send(sock,&msg,strlen(msg)+1,0);
+        if(strcmp(msg,"end\n") == 0){
+            break;
+        }
+    }
+    close(sock);
+    printf("Disconected ! \n");
+    exit(0);
+}
+
+void* receiveFromServer(void * socket){
+    char answ[200];
+    int sock = (int) socket;
+    while(1){
+        int rcv = recv(sock,&answ,sizeof(answ),0);
+        if(strcmp(answ,"end\n") == 0){
+            break;
+        }
+        printf("Other client said: %s",answ);
+    }
+    close(sock);
+    printf("Disconected ! \n");
+    exit(0);
+}
+
 
 
 int main(int argc, char const *argv[]) {
@@ -16,66 +51,41 @@ int main(int argc, char const *argv[]) {
 		return -1;
 	}
 
+    //IP address and port number
 	char* ip = argv[1];
 	char* port = argv[2];
     
+    //struct uses for server connexion
     struct sockaddr_in addrServ;
-
     addrServ.sin_family=AF_INET;
     inet_pton(AF_INET, ip, &(addrServ.sin_addr));
     addrServ.sin_port = htons((short) atoi(port));
     socklen_t igA = sizeof(struct sockaddr_in);
-    
-    char msg[200];
-    char answ[200];
+
+    //Client ID
     int MY_ID;
 
+    //Open Connexion
     int dSock = socket(PF_INET,SOCK_STREAM,0);
-    
     int connexion = connect(dSock, (struct sockaddr*)&addrServ, igA);
-
     if (connexion < 0){
-        perror("Error : ");
+        perror("Connexion Error : ");
         exit(0);
     }
 
     printf("Connected ! \n");
     
+    //ID reception from the server
     recv(dSock,&MY_ID,sizeof(int),0);
     printf("You are the client %d \n",MY_ID);
     
-    while(1){
-        if (MY_ID == 1){
-            printf("Enter your message: \n");
-            fgets(msg,200,stdin); 
-            send(dSock,&msg,strlen(msg)+1,0);
-            if(strcmp(msg,"end\n") == 0){
-                break;
-            }
-            printf("Waiting for answer: \n");
-            recv(dSock,&answ,sizeof(answ),0);
-            if(strcmp(answ,"end\n") == 0){
-                break;
-            }
-            printf("Client 2: %s",answ);
-        }
+    pthread_t PTh_send;
+    pthread_t PTh_receive;
 
-        if(MY_ID == 2){
-            printf("Waiting for answer: \n");
-            recv(dSock,&answ,sizeof(answ),0);
-            if(strcmp(answ,"end\n") == 0){
-                break;
-            }
-            printf("Client 1: %s",answ);
-            printf("Enter your message: \n");
-            fgets(msg,200,stdin);
-            send(dSock,&msg,strlen(msg)+1,0);
-            if(strcmp(msg,"end\n") == 0){
-                break;
-            }
-        }
-    } 
-    printf("Disconected ! \n");
-    close(dSock);
+    pthread_create(&PTh_send,NULL, sendToServer,(void*) dSock);
+    pthread_create(&PTh_receive,NULL, receiveFromServer,(void*) dSock);
+    pthread_join(PTh_send, NULL);
+    pthread_join(PTh_receive, NULL);
+
     return 0;
 }
