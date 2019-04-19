@@ -23,8 +23,8 @@ void* sendToServer(void* socket){
             break;
         }
     }
-    printf("Disconected ! \n");
     close(sock);
+    printf("Disconected ! \n");
     exit(0);
 }
 
@@ -32,14 +32,14 @@ void* receiveFromServer(void * socket){
     char answ[200];
     int sock = (int) socket;
     while(1){
-        recv(sock,&answ,sizeof(answ),0);
+        int rcv = recv(sock,&answ,sizeof(answ),0);
         if(strcmp(answ,"end\n") == 0){
             break;
         }
         printf("Other client said: %s",answ);
     }
-    printf("Disconected ! \n");
     close(sock);
+    printf("Disconected ! \n");
     exit(0);
 }
 

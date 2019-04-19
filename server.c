@@ -18,29 +18,23 @@ struct ClientsSockets {
 void* fromClient1ToClient2(void *socketList){
     char msg[200];
     while(1){
-        recv(((struct ClientsSockets*) socketList)->client1,&msg,sizeof(msg),0);
-        send(((struct ClientsSockets*) socketList)->client2,&msg,strlen(msg)+1,0);
-        if(strcmp(msg,"end\n") == 0){
-            close(((struct ClientsSockets*) socketList)->client1);
-            close(((struct ClientsSockets*) socketList)->client2);
+        int rcv = recv(((struct ClientsSockets*) socketList)->client1,&msg,sizeof(msg),0);
+        if(rcv == 0){
             break;
         }
+        send(((struct ClientsSockets*) socketList)->client2,&msg,strlen(msg)+1,0);  
     }
-    
 }
 
 void* fromClient2ToClient1(void *socketList){
     char msg[200];
     while(1){
-        recv(((struct ClientsSockets*) socketList)->client2,&msg,sizeof(msg),0);
-        send(((struct ClientsSockets*) socketList)->client1,&msg,strlen(msg)+1,0);
-        if(strcmp(msg,"end\n") == 0){
-            close(((struct ClientsSockets*) socketList)->client2);
-            close(((struct ClientsSockets*) socketList)->client1);
+        int rcv = recv(((struct ClientsSockets*) socketList)->client2,&msg,sizeof(msg),0);
+        if(rcv == 0){
             break;
         }
-    }
-    
+        send(((struct ClientsSockets*) socketList)->client1,&msg,strlen(msg)+1,0);
+    }   
 }
 
 
@@ -113,8 +107,6 @@ int main(int argc, char const *argv[]){
         struct ClientsSockets *socketList = (struct ClientsSockets*) malloc(sizeof(struct ClientsSockets));
         socketList->client1 = socketClient1;
         socketList->client2 = socketClient2;
-
-        
 
         pthread_create(&PTh_1To2,NULL, fromClient1ToClient2,(void*) socketList);
         pthread_create(&PTh_2To1,NULL, fromClient2ToClient1,(void*) socketList);
