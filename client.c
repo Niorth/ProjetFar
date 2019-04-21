@@ -52,8 +52,10 @@ int main(int argc, char const *argv[]) {
 	}
 
     //IP address and port number
-	char* ip = argv[1];
-	char* port = argv[2];
+	char* ip;
+    ip = argv[1];
+	char* port; 
+    port = argv[2];
     
     //struct uses for server connexion
     struct sockaddr_in addrServ;

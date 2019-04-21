@@ -9,11 +9,7 @@
 #include <arpa/inet.h>
 #include <errno.h>
 #include <pthread.h>
-
-struct ClientsSockets {
-    int client1;
-    int client2;
-};
+#include "clientsSockets.h"
 
 void* fromClient1ToClient2(void *socketList){
     char msg[200];
