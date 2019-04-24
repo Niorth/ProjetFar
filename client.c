@@ -53,28 +53,51 @@ FILE* new_tty() {
   return fp;
 }
 
-char* selectFileName() {
-  FILE* fp1 = new_tty();
-  fprintf(fp1,"%s\n","Only for display\n");
+void* displayDirectory() {
+    FILE* fp1 = new_tty();
+    fprintf(fp1,"%s\n","Only for display\n");
 
-  DIR *dp;
-  struct dirent *ep;     
-  dp = opendir ("./transfer");
-  if (dp != NULL) {
-    fprintf(fp1,"Files\n-------------\n");
-    while (ep = readdir (dp)) {
-      if(strcmp(ep->d_name,".")!=0 && strcmp(ep->d_name,"..")!=0) 
-	fprintf(fp1,"%s\n",ep->d_name);
-    }    
-    (void) closedir (dp);
+    DIR *dp;
+    struct dirent *ep;     
+    dp = opendir ("./transfer");
+    if (dp != NULL) {
+        fprintf(fp1,"Files\n-------------\n");
+        while (ep = readdir(dp)) {
+            if(strcmp(ep->d_name,".")!=0 && strcmp(ep->d_name,"..")!=0) 
+                fprintf(fp1,"%s\n",ep->d_name);
+            }    
+            (void)closedir(dp);
+        }
+    else {
+        perror ("Can't open the directory");
+    }
+}
+
+char* selectFileName() {
+  displayDirectory();
+  
+  FILE *fps = NULL;
+  char* fileName = malloc(900);
+  char * dirName = "./transfer/";
+  char filePath[1023];
+
+  while(fps == NULL) {
+    strcpy(filePath, "");
+
+    printf("Select a file : ");
+    fgets(fileName,900,stdin);
+    fileName[strlen(fileName)-1]='\0';
+
+    strcat(filePath, dirName);
+    strcat(filePath, fileName);
+
+    fps = fopen(filePath, "r");
+    if (fps == NULL){
+        printf("no such file : %s\n",fileName);
+    }
+
   }
-  else {
-    perror ("Can't open the directory");
-  }
-  printf("Select a file : ");
-  char* fileName = malloc(1023);
-  fgets(fileName,sizeof(fileName),stdin);
-  fileName[strlen(fileName)-1]='\0';
+  fclose(fps);
   return fileName;
 }
 
