@@ -15,6 +15,7 @@ struct paquet{
     int id;
     int type; //0 message 1 fichier
     char str[1000]; //données
+    char nameFile[50];//nom du fichier
 };
 
 
