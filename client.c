@@ -11,7 +11,7 @@
 #include <pthread.h>
 
 
-
+//function send message to the server until the client writes end
 void* sendToServer(void* socket){
     char msg[200];
     int sock = (int) socket;
@@ -27,7 +27,7 @@ void* sendToServer(void* socket){
     printf("Disconected ! \n");
     exit(0);
 }
-
+//function receive message from the server until the client receives end
 void* receiveFromServer(void * socket){
     char answ[200];
     int sock = (int) socket;
@@ -81,11 +81,13 @@ int main(int argc, char const *argv[]) {
     recv(dSock,&MY_ID,sizeof(int),0);
     printf("You are the client %d \n",MY_ID);
     
+    //pthread uses for send and receive
     pthread_t PTh_send;
     pthread_t PTh_receive;
-
+    //creating pthread
     pthread_create(&PTh_send,NULL, sendToServer,(void*) dSock);
     pthread_create(&PTh_receive,NULL, receiveFromServer,(void*) dSock);
+    //wait until the threads are finished to close the client
     pthread_join(PTh_send, NULL);
     pthread_join(PTh_receive, NULL);
 

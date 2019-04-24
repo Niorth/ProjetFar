@@ -11,6 +11,7 @@
 #include <pthread.h>
 #include "clientsSockets.h"
 
+//function receives message to the client 1 and sends to client2 if message not null
 void* fromClient1ToClient2(void *socketList){
     char msg[200];
     while(1){
@@ -21,7 +22,7 @@ void* fromClient1ToClient2(void *socketList){
         send(((struct ClientsSockets*) socketList)->client2,&msg,strlen(msg)+1,0);  
     }
 }
-
+//function receives message to the client 2 and sends to client1 if message not null
 void* fromClient2ToClient1(void *socketList){
     char msg[200];
     while(1){
@@ -40,22 +41,22 @@ int main(int argc, char const *argv[]){
 		perror("Invalid argument number : \n1 : Port");
 		return -1;
 	}
-
+    //port number
 	char* port = argv[1];
-    
+    //struct uses for client connexion
     struct sockaddr_in addrClient;
-
+    //struct uses for server connexion
     struct sockaddr_in addrServ;
     addrServ.sin_family=AF_INET;
     addrServ.sin_addr.s_addr = INADDR_ANY;
     addrServ.sin_port = htons((short) atoi(argv[1]));
     socklen_t lg = sizeof(struct sockaddr_in);
 
-    
+    //Client IDs
     int ID_CLIENT_1 = 1;
     int ID_CLIENT_2 = 2;
     
-
+    //Open Connexion
     int dSock = socket(PF_INET,SOCK_STREAM,0);
 
     if (dSock < 0){
@@ -80,6 +81,7 @@ int main(int argc, char const *argv[]){
     printf("Server launched !\n");
     
     while(1){
+        //ID reception from the client 1
         int socketClient1 = accept(dSock,(struct sockaddr*) &addrClient,&lg);
         if(socketClient1 < 0) {
 		    perror("Error while accepting first connection");
@@ -87,7 +89,7 @@ int main(int argc, char const *argv[]){
 	    }
 
         send(socketClient1,&ID_CLIENT_1,sizeof(int),0);
-
+        //ID reception from the client 2
         int socketClient2 = accept(dSock,(struct sockaddr*) &addrClient,&lg);
         if(socketClient2 < 0) {
 		    perror("Error while accepting second connection");
@@ -95,7 +97,8 @@ int main(int argc, char const *argv[]){
 	    }
 
         send(socketClient2,&ID_CLIENT_2,sizeof(int),0);
-
+        
+        //pthread uses for send and receive to clients
         pthread_t PTh_1To2;
         pthread_t PTh_2To1;
 
@@ -103,7 +106,7 @@ int main(int argc, char const *argv[]){
         struct ClientsSockets *socketList = (struct ClientsSockets*) malloc(sizeof(struct ClientsSockets));
         socketList->client1 = socketClient1;
         socketList->client2 = socketClient2;
-
+        //creating pthread
         pthread_create(&PTh_1To2,NULL, fromClient1ToClient2,(void*) socketList);
         pthread_create(&PTh_2To1,NULL, fromClient2ToClient1,(void*) socketList);
         
