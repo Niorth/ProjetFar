@@ -24,7 +24,7 @@ int get_last_tty() {
   char path[1035];
   fp = popen("/bin/ls /dev/pts", "r");
   if (fp == NULL) {
-    printf("Impossible d'exécuter la commande\n" );
+    printf("can't execute the command\n" );
     exit(1);
   }
   int i = INT_MIN;
@@ -60,41 +60,52 @@ FILE* new_tty() {
   return fp;
 }
 
-void *displayDirectory() {
-  FILE* fp1 = new_tty();
-  fprintf(fp1,"%s\n","Ce terminal sera utilisé uniquement pour l'affichage");
+void* displayDirectory() {
+    FILE* fp1 = new_tty();
+    fprintf(fp1,"%s\n","Only for display\n");
 
-  // Demander à l'utilisateur quel fichier afficher
-  DIR *dp;
-  struct dirent *ep;     
-  dp = opendir ("./");
-  if (dp != NULL) {
-    fprintf(fp1,"Voilà la liste de fichiers :\n");
-    while (ep = readdir (dp)) {
-      if(strcmp(ep->d_name,".")!=0 && strcmp(ep->d_name,"..")!=0) 
-	fprintf(fp1,"%s\n",ep->d_name);
-    }    
-    (void) closedir (dp);
-  }
-  else {
-    perror ("Ne peux pas ouvrir le répertoire");
-  }
-  printf("Indiquer le nom du fichier : ");
-  char fileName[1023];
-  fgets(fileName,sizeof(fileName),stdin);
-  fileName[strlen(fileName)-1]='\0';
-  FILE *fps = fopen(fileName, "r");
-  if (fps == NULL){
-    printf("Ne peux pas ouvrir le fichier suivant : %s",fileName);
-  }
-  else {
-    char str[1000];    
-    // Lire et afficher le contenu du fichier
-    while (fgets(str, 1000, fps) != NULL) {
-      fprintf(fp1,"%s",str);
+    DIR *dp;
+    struct dirent *ep;     
+    dp = opendir ("./transfer");
+    if (dp != NULL) {
+        fprintf(fp1,"Files\n-------------\n");
+        while (ep = readdir(dp)) {
+            if(strcmp(ep->d_name,".")!=0 && strcmp(ep->d_name,"..")!=0) 
+                fprintf(fp1,"%s\n",ep->d_name);
+            }    
+            (void)closedir(dp);
+        }
+    else {
+        perror ("Can't open the directory");
     }
+}
+
+char* selectFileName() {
+  displayDirectory();
+  
+  FILE *fps = NULL;
+  char* fileName = malloc(900);
+  char * dirName = "./transfer/";
+  char filePath[1023];
+
+  while(fps == NULL) {
+    strcpy(filePath, "");
+
+    printf("Select a file : ");
+    fgets(fileName,900,stdin);
+    fileName[strlen(fileName)-1]='\0';
+
+    strcat(filePath, dirName);
+    strcat(filePath, fileName);
+
+    fps = fopen(filePath, "r");
+    if (fps == NULL){
+        printf("no such file : %s\n",fileName);
+    }
+
   }
-  fclose(fps);	
+  fclose(fps);
+  return fileName;
 }
 
 
@@ -108,7 +119,11 @@ void* sendToServer(void* socket){
         fgets(msg,200,stdin); 
 
         if(strcmp(msg, "file\n") == 0) {//send file
+
             //nouvelle fonction pour l'envoi 
+
+            char* fileName = selectFileName();
+            printf("File selected : %s\n",fileName);  
         }
         else {//send message
             p.type=0;
