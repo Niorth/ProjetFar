@@ -12,6 +12,13 @@
 #include <dirent.h>
 #include <limits.h>
 
+struct paquet{
+    int id;
+    int type; //0 message 1 fichier
+    char str[1000]; //données
+    char nameFile[50];//nom du fichier
+};
+
 int get_last_tty() {
   FILE *fp;
   char path[1035];
@@ -93,17 +100,20 @@ void *displayDirectory() {
 
 //function send message to the server until the client writes end
 void* sendToServer(void* socket){
-    char msg[200];
+    char msg[1000];
+    struct paquet p;
     int sock = (int) socket;
     printf("You can write your messages \n");
     while(1){
         fgets(msg,200,stdin); 
 
         if(strcmp(msg, "file\n") == 0) {//send file
-            displayDirectory();
+            //nouvelle fonction pour l'envoi 
         }
         else {//send message
-            send(sock,&msg,strlen(msg)+1,0);
+            p.type=0;
+            strcpy(p.str,msg);
+            send(sock,&p,sizeof(p),0);
             if(strcmp(msg,"end\n") == 0){
                 break;
             }
@@ -114,16 +124,35 @@ void* sendToServer(void* socket){
     exit(0);
 }
 
+//function load file from the server
+void loadFile(struct paquet p){
+    struct paquet f=p;
+    FILE* file=fopen(f.nameFile,"a+");
+    fputs(f.str,file);
+    fclose(file);
+}
+
+
 //function receive message from the server until the client receives end
 void* receiveFromServer(void * socket){
-    char answ[200];
+    char answ[1000];
+    struct paquet p;
     int sock = (int) socket;
+
     while(1){
-        int rcv = recv(sock,&answ,sizeof(answ),0);
-        if(strcmp(answ,"end\n") == 0){
-            break;
+        int rcv = recv(sock,&p,sizeof(p),0);
+        if(rcv<0){
+            perror("error receive");
         }
-        printf("Other client said: %s",answ);
+        if(p.type==0){
+            if(strcmp(p.str,"end\n") == 0){
+                break;
+            }
+            printf("Other client said: %s",p.str);
+        }else{
+           //load file
+            loadFile(p);
+        }
     }
     close(sock);
     printf("Disconected ! \n");
