@@ -9,6 +9,7 @@
 #include <arpa/inet.h>
 #include <errno.h>
 #include <pthread.h>
+#include "clientsSockets.h"
 
 
 //function send message to the server until the client writes end
@@ -29,14 +30,16 @@ void* sendToServer(void* socket){
 }
 //function receive message from the server until the client receives end
 void* receiveFromServer(void * socket){
-    char answ[200];
+    
+    struct messageFrom msgF;
     int sock = (int) socket;
     while(1){
-        int rcv = recv(sock,&answ,sizeof(answ),0);
-        if(strcmp(answ,"end\n") == 0){
+        int rcv = recv(sock,&msgF,sizeof(msgF),0);
+        if(strcmp(msgF.msg,"end\n") == 0){
             break;
         }
-        printf("Other client said: %s",answ);
+        *strchr(msgF.pseudo,'\n') = '\0';
+        printf("%s said: %s",msgF.pseudo,msgF.msg);
     }
     close(sock);
     printf("Disconected ! \n");
@@ -64,8 +67,7 @@ int main(int argc, char const *argv[]) {
     addrServ.sin_port = htons((short) atoi(port));
     socklen_t igA = sizeof(struct sockaddr_in);
 
-    //Client ID
-    int MY_ID;
+    
 
     //Open Connexion
     int dSock = socket(PF_INET,SOCK_STREAM,0);
@@ -77,10 +79,12 @@ int main(int argc, char const *argv[]) {
 
     printf("Connected ! \n");
     
-    //ID reception from the server
-    recv(dSock,&MY_ID,sizeof(int),0);
-    printf("You are the client %d \n",MY_ID);
-    
+    char MyPseudo[20];
+    printf("Enter your pseudo: \n");
+    fgets(MyPseudo,20,stdin); 
+
+    //Send pseudo to the server
+    send(dSock,&MyPseudo,strlen(MyPseudo),0);
     //pthread uses for send and receive
     pthread_t PTh_send;
     pthread_t PTh_receive;

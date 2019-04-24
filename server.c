@@ -10,29 +10,40 @@
 #include <errno.h>
 #include <pthread.h>
 #include "clientsSockets.h"
+//Tab clients for 10 clients
+struct ClientInfo tabClients[10]; 
+int nbClientsConnected = 0;
 
-//function receives message to the client 1 and sends to client2 if message not null
-void* fromClient1ToClient2(void *socketList){
+//function receives message from dsock and forward it to the others
+void* listenAndForward(void *ClientToListen){
+    char pseudo[20];
+    
+    int mySocket = ((struct ClientInfo*)ClientToListen)->socket;
+    strcpy(pseudo,((struct ClientInfo*)ClientToListen)->pseudo);
+    printf("Check %d %s",mySocket,pseudo);
     char msg[200];
     while(1){
-        int rcv = recv(((struct ClientsSockets*) socketList)->client1,&msg,sizeof(msg),0);
+        int rcv = recv(mySocket,&msg,sizeof(msg),0);
         if(rcv == 0){
             break;
         }
-        send(((struct ClientsSockets*) socketList)->client2,&msg,strlen(msg)+1,0);  
+        
+        struct messageFrom msgF;
+        strcpy(msgF.msg,msg);
+        strcpy(msgF.pseudo,pseudo);
+
+        for(int i = 0; i < nbClientsConnected; i++){
+            if (tabClients[i].socket != mySocket){
+                send(tabClients[i].socket,&msgF,sizeof(msgF),0);
+            }
+        } 
+
+        if (strcmp(msg,"end\n") == 0){
+            nbClientsConnected = 0;
+        }
     }
 }
-//function receives message to the client 2 and sends to client1 if message not null
-void* fromClient2ToClient1(void *socketList){
-    char msg[200];
-    while(1){
-        int rcv = recv(((struct ClientsSockets*) socketList)->client2,&msg,sizeof(msg),0);
-        if(rcv == 0){
-            break;
-        }
-        send(((struct ClientsSockets*) socketList)->client1,&msg,strlen(msg)+1,0);
-    }   
-}
+
 
 
 int main(int argc, char const *argv[]){
@@ -41,6 +52,7 @@ int main(int argc, char const *argv[]){
 		perror("Invalid argument number : \n1 : Port");
 		return -1;
 	}
+
     //port number
 	char* port = argv[1];
     //struct uses for client connexion
@@ -81,35 +93,34 @@ int main(int argc, char const *argv[]){
     printf("Server launched !\n");
     
     while(1){
-        //ID reception from the client 1
-        int socketClient1 = accept(dSock,(struct sockaddr*) &addrClient,&lg);
-        if(socketClient1 < 0) {
-		    perror("Error while accepting first connection");
-		    exit(0);
-	    }
-
-        send(socketClient1,&ID_CLIENT_1,sizeof(int),0);
-        //ID reception from the client 2
-        int socketClient2 = accept(dSock,(struct sockaddr*) &addrClient,&lg);
-        if(socketClient2 < 0) {
-		    perror("Error while accepting second connection");
-		    exit(0);
-	    }
-
-        send(socketClient2,&ID_CLIENT_2,sizeof(int),0);
         
-        //pthread uses for send and receive to clients
-        pthread_t PTh_1To2;
-        pthread_t PTh_2To1;
-
-
-        struct ClientsSockets *socketList = (struct ClientsSockets*) malloc(sizeof(struct ClientsSockets));
-        socketList->client1 = socketClient1;
-        socketList->client2 = socketClient2;
-        //creating pthread
-        pthread_create(&PTh_1To2,NULL, fromClient1ToClient2,(void*) socketList);
-        pthread_create(&PTh_2To1,NULL, fromClient2ToClient1,(void*) socketList);
+        if(nbClientsConnected <10){
+            int socketClient1 = accept(dSock,(struct sockaddr*) &addrClient,&lg);
+            printf("socketclient %d\n", socketClient1);
+            if(socketClient1 < 0) {
+		        perror("Error while accepting first connection");
+		        exit(0);
+	        }
         
+        
+
+            char clientPseudo[20];
+            recv(socketClient1,&clientPseudo,sizeof(clientPseudo),0);
+
+            struct ClientInfo client;
+            strcpy(client.pseudo,clientPseudo);
+            client.socket = socketClient1;
+            tabClients[nbClientsConnected] = client;
+            nbClientsConnected = nbClientsConnected + 1; 
+
+            
+        
+        
+            pthread_t PTh_ListenClient;
+        
+            //creating pthread
+            pthread_create(&PTh_ListenClient,NULL, listenAndForward,(void*) &client);
+        }
         
     } 
     
