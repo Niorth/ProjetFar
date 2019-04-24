@@ -17,7 +17,7 @@ int get_last_tty() {
   char path[1035];
   fp = popen("/bin/ls /dev/pts", "r");
   if (fp == NULL) {
-    printf("Impossible d'exécuter la commande\n" );
+    printf("can't execute the command\n" );
     exit(1);
   }
   int i = INT_MIN;
@@ -53,16 +53,15 @@ FILE* new_tty() {
   return fp;
 }
 
-void *displayDirectory() {
+char* selectFileName() {
   FILE* fp1 = new_tty();
-  fprintf(fp1,"%s\n","Ce terminal sera utilisé uniquement pour l'affichage");
+  fprintf(fp1,"%s\n","Only for display\n");
 
-  // Demander à l'utilisateur quel fichier afficher
   DIR *dp;
   struct dirent *ep;     
-  dp = opendir ("./");
+  dp = opendir ("./transfer");
   if (dp != NULL) {
-    fprintf(fp1,"Voilà la liste de fichiers :\n");
+    fprintf(fp1,"Files\n-------------\n");
     while (ep = readdir (dp)) {
       if(strcmp(ep->d_name,".")!=0 && strcmp(ep->d_name,"..")!=0) 
 	fprintf(fp1,"%s\n",ep->d_name);
@@ -70,24 +69,13 @@ void *displayDirectory() {
     (void) closedir (dp);
   }
   else {
-    perror ("Ne peux pas ouvrir le répertoire");
+    perror ("Can't open the directory");
   }
-  printf("Indiquer le nom du fichier : ");
-  char fileName[1023];
+  printf("Select a file : ");
+  char* fileName = malloc(1023);
   fgets(fileName,sizeof(fileName),stdin);
   fileName[strlen(fileName)-1]='\0';
-  FILE *fps = fopen(fileName, "r");
-  if (fps == NULL){
-    printf("Ne peux pas ouvrir le fichier suivant : %s",fileName);
-  }
-  else {
-    char str[1000];    
-    // Lire et afficher le contenu du fichier
-    while (fgets(str, 1000, fps) != NULL) {
-      fprintf(fp1,"%s",str);
-    }
-  }
-  fclose(fps);	
+  return fileName;
 }
 
 
@@ -100,7 +88,8 @@ void* sendToServer(void* socket){
         fgets(msg,200,stdin); 
 
         if(strcmp(msg, "file\n") == 0) {//send file
-            displayDirectory();
+            char* fileName = malloc(selectFileName());
+           
         }
         else {//send message
             send(sock,&msg,strlen(msg)+1,0);
