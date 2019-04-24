@@ -11,45 +11,57 @@
 #include <pthread.h>
 #include "clientsSockets.h"
 
-//function receives message to the client 1 and sends to client2 if message not null
+struct paquet{
+    int id;
+    int type; //0 message 1 fichier
+    char str[1000]; //données
+};
+
+
+//function receives message to the client 1 and sends to client2 
 void* fromClient1ToClient2(void *socketList){
-    char msg[200];
+    struct paquet p;
     while(1){
-        int rcv = recv(((struct ClientsSockets*) socketList)->client1,&msg,sizeof(msg),0);
+        int rcv = recv(((struct ClientsSockets*) socketList)->client1,&p,sizeof(p),0);
         if(rcv == 0){
             break;
         }
-        send(((struct ClientsSockets*) socketList)->client2,&msg,strlen(msg)+1,0);  
+        send(((struct ClientsSockets*) socketList)->client2,&p,sizeof(p),0);  
     }
 }
-//function receives message to the client 2 and sends to client1 if message not null
+
+
+//function receives message to the client 2 and sends to client1
 void* fromClient2ToClient1(void *socketList){
-    char msg[200];
+    struct paquet p;
     while(1){
-        int rcv = recv(((struct ClientsSockets*) socketList)->client2,&msg,sizeof(msg),0);
+        int rcv = recv(((struct ClientsSockets*) socketList)->client2,&p,sizeof(p),0);
         if(rcv == 0){
             break;
         }
-        send(((struct ClientsSockets*) socketList)->client1,&msg,strlen(msg)+1,0);
+        send(((struct ClientsSockets*) socketList)->client1,&p,sizeof(p),0);
     }   
 }
 
 
 int main(int argc, char const *argv[]){
 
-	if(argc != 2) {
+	if(argc != 3) {
 		perror("Invalid argument number : \n1 : Port");
 		return -1;
 	}
+
     //port number
 	char* port = argv[1];
+
     //struct uses for client connexion
     struct sockaddr_in addrClient;
+    
     //struct uses for server connexion
     struct sockaddr_in addrServ;
     addrServ.sin_family=AF_INET;
     addrServ.sin_addr.s_addr = INADDR_ANY;
-    addrServ.sin_port = htons((short) atoi(argv[1]));
+    addrServ.sin_port = htons((short) atoi(port));
     socklen_t lg = sizeof(struct sockaddr_in);
 
     //Client IDs
@@ -106,10 +118,10 @@ int main(int argc, char const *argv[]){
         struct ClientsSockets *socketList = (struct ClientsSockets*) malloc(sizeof(struct ClientsSockets));
         socketList->client1 = socketClient1;
         socketList->client2 = socketClient2;
+
         //creating pthread
         pthread_create(&PTh_1To2,NULL, fromClient1ToClient2,(void*) socketList);
         pthread_create(&PTh_2To1,NULL, fromClient2ToClient1,(void*) socketList);
-        
         
     } 
     
