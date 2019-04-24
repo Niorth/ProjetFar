@@ -18,7 +18,10 @@ struct paquet{
     char str[1000]; //données
     char nameFile[50];//nom du fichier
 };
-
+struct nameFile_socket{
+    int socket;
+    char nameFile[50];//nom du fichier
+};
 int get_last_tty() {
   FILE *fp;
   char path[1035];
@@ -65,11 +68,11 @@ void* displayDirectory() {
     fprintf(fp1,"%s\n","Only for display\n");
 
     DIR *dp;
-    struct dirent *ep;     
+    struct dirent *ep;
     dp = opendir ("./transfer");
     if (dp != NULL) {
         fprintf(fp1,"Files\n-------------\n");
-        while (ep = readdir(dp)) {
+        while (ep = readfichierdir(dp)) {
             if(strcmp(ep->d_name,".")!=0 && strcmp(ep->d_name,"..")!=0) 
                 fprintf(fp1,"%s\n",ep->d_name);
             }    
@@ -108,6 +111,23 @@ char* selectFileName() {
   return fileName;
 }
 
+//function send file to the server
+void* sendFile(void* argument){
+    struct nameFile_socket * arg =(struct nameFile_socket*) argument;
+    char msg[1000];
+    struct paquet p;
+    p.type=1;
+    strcpy(p.nameFile,arg->nameFile);
+    int sock = arg->socket;
+    FILE* file=fopen(arg->nameFile,"r");
+    while(fgets(msg, 1000, file) != NULL){
+        strcpy(p.str,msg);
+        send(sock,&p,sizeof(p),0);
+    }
+    close(sock);
+    printf("Disconected ! \n");
+    exit(0);
+}
 
 //function send message to the server until the client writes end
 void* sendToServer(void* socket){
@@ -123,7 +143,15 @@ void* sendToServer(void* socket){
             //nouvelle fonction pour l'envoi 
 
             char* fileName = selectFileName();
-            printf("File selected : %s\n",fileName);  
+            printf("File selected : %s\n",fileName);
+
+            struct nameFile_socket arg;
+            arg.socket=sock;
+            strcpy(arg.nameFile,fileName);
+
+             pthread_t PTh_send_file;
+            //creating pthread
+            pthread_create(&PTh_send_file,NULL, sendFile,(void*) &arg);
         }
         else {//send message
             p.type=0;
