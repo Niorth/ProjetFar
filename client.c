@@ -88,8 +88,8 @@ void* sendToServer(void* socket){
         fgets(msg,200,stdin); 
 
         if(strcmp(msg, "file\n") == 0) {//send file
-            char* fileName = malloc(selectFileName());
-           
+            char* fileName = selectFileName();
+            printf("File selected : %s\n",fileName);  
         }
         else {//send message
             send(sock,&msg,strlen(msg)+1,0);
