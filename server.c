@@ -47,7 +47,7 @@ void* fromClient2ToClient1(void *socketList){
 
 int main(int argc, char const *argv[]){
 
-	if(argc != 3) {
+	if(argc != 2) {
 		perror("Invalid argument number : \n1 : Port");
 		return -1;
 	}

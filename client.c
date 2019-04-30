@@ -72,7 +72,7 @@ void* displayDirectory() {
     dp = opendir ("./transfer");
     if (dp != NULL) {
         fprintf(fp1,"Files\n-------------\n");
-        while (ep = readfichierdir(dp)) {
+        while (ep = readdir(dp)) {
             if(strcmp(ep->d_name,".")!=0 && strcmp(ep->d_name,"..")!=0) 
                 fprintf(fp1,"%s\n",ep->d_name);
             }    
@@ -117,16 +117,27 @@ void* sendFile(void* argument){
     char msg[1000];
     struct paquet p;
     p.type=1;
+
     strcpy(p.nameFile,arg->nameFile);
     int sock = arg->socket;
-    FILE* file=fopen(arg->nameFile,"r");
+    char path[70] = "./transfer/";
+    strcat(path, arg->nameFile);
+    printf("%s\n",path );
+
+    FILE* file=fopen(path,"r");
+
+    if(file == NULL){
+      perror("Error opening file");
+      exit(0);
+    }
+
+
     while(fgets(msg, 1000, file) != NULL){
         strcpy(p.str,msg);
-        send(sock,&p,sizeof(p),0);
+        printf("%s", p.str);
+        send(sock,&p,sizeof(p),0);;
     }
-    close(sock);
-    printf("Disconected ! \n");
-    exit(0);
+    close(file);
 }
 
 //function send message to the server until the client writes end
@@ -143,13 +154,14 @@ void* sendToServer(void* socket){
             //nouvelle fonction pour l'envoi 
 
             char* fileName = selectFileName();
-            printf("File selected : %s\n",fileName);
 
             struct nameFile_socket arg;
-            arg.socket=sock;
-            strcpy(arg.nameFile,fileName);
+            arg.socket = sock;
+            strcpy(arg.nameFile, fileName);
 
-             pthread_t PTh_send_file;
+            printf("File selected : %s\n",fileName);
+
+            pthread_t PTh_send_file;
             //creating pthread
             pthread_create(&PTh_send_file,NULL, sendFile,(void*) &arg);
         }
