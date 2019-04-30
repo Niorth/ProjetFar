@@ -18,10 +18,12 @@ struct paquet{
     char str[1000]; //données
     char nameFile[50];//nom du fichier
 };
+
 struct nameFile_socket{
     int socket;
     char nameFile[50];//nom du fichier
 };
+
 int get_last_tty() {
   FILE *fp;
   char path[1035];
@@ -122,7 +124,6 @@ void* sendFile(void* argument){
     int sock = arg->socket;
     char path[70] = "./transfer/";
     strcat(path, arg->nameFile);
-    printf("%s\n",path );
 
     FILE* file=fopen(path,"r");
 
@@ -131,12 +132,12 @@ void* sendFile(void* argument){
       exit(0);
     }
 
-
+    printf("Uploadind...\n");
     while(fgets(msg, 1000, file) != NULL){
         strcpy(p.str,msg);
-        printf("%s", p.str);
         send(sock,&p,sizeof(p),0);;
     }
+    printf("Uploaded !\n");
     close(file);
 }
 
@@ -182,7 +183,9 @@ void* sendToServer(void* socket){
 //function load file from the server
 void loadFile(struct paquet p){
     struct paquet f=p;
-    FILE* file=fopen(f.nameFile,"a+");
+    char path[70] = "./transfered/";
+    strcat(path, f.nameFile);
+    FILE* file=fopen(path, "a+");
     fputs(f.str,file);
     fclose(file);
 }

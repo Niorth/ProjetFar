@@ -19,7 +19,7 @@ struct paquet{
 };
 
 
-//function receives message to the client 1 and sends to client2 
+//function receives message from the client 1 and sends to client2 
 void* fromClient1ToClient2(void *socketList){
     struct paquet p;
     while(1){
@@ -32,7 +32,7 @@ void* fromClient1ToClient2(void *socketList){
 }
 
 
-//function receives message to the client 2 and sends to client1
+//function receives message from the client 2 and sends to client1
 void* fromClient2ToClient1(void *socketList){
     struct paquet p;
     while(1){
