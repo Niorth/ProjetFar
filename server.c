@@ -10,16 +10,17 @@
 #include <errno.h>
 #include <pthread.h>
 #include "clientsSockets.h"
-//Tab clients for 10 clients
-struct ClientInfo tabClients[10]; 
-int nbClientsConnected = 0;
+
+//Salons with max 10 salon
+//nb client max by salon is handle in the salon struct
+struct listeSalon Salons;
 
 //function receives message from dsock and forward it to the others
 void* listenAndForward(void *ClientToListen){
     char pseudo[20];
-    
-    int mySocket = ((struct ClientInfo*)ClientToListen)->socket;
-    strcpy(pseudo,((struct ClientInfo*)ClientToListen)->pseudo);
+    int mySalon = ((struct clientSalon*)ClientToListen)->idSalon;
+    int mySocket = ((struct clientSalon*)ClientToListen)->client.socket;
+    strcpy(pseudo,((struct clientSalon*)ClientToListen)->client.pseudo);
     printf("Check %d %s",mySocket,pseudo);
     char msg[200];
     while(1){
@@ -32,14 +33,18 @@ void* listenAndForward(void *ClientToListen){
         strcpy(msgF.msg,msg);
         strcpy(msgF.pseudo,pseudo);
 
-        for(int i = 0; i < nbClientsConnected; i++){
-            if (tabClients[i].socket != mySocket){
-                send(tabClients[i].socket,&msgF,sizeof(msgF),0);
+        for(int i = 0; i < Salons.tabSalon[mySalon].nbClientsConnected; i++){
+            if (Salons.tabSalon[mySalon].tabClients[i].socket != mySocket){
+                send(Salons.tabSalon[mySalon].tabClients[i].socket,&msgF,sizeof(msgF),0);
             }
         } 
 
         if (strcmp(msg,"end\n") == 0){
-            nbClientsConnected = 0;
+            Salons.nbClientsConnected = Salons.nbClientsConnected - Salons.tabSalon[mySalon].nbClientsConnected; //we disconect all users of the salon when one ask to disconect
+            Salons.tabSalon[mySalon].nbClientsConnected = 0;
+            Salons.tabSalon[mySalon].actif = 0;
+            Salons.nbSalonActive = Salons.nbSalonActive - 1;
+            
         }
     }
 }
@@ -47,6 +52,9 @@ void* listenAndForward(void *ClientToListen){
 
 
 int main(int argc, char const *argv[]){
+
+    Salons.nbSalons = 0;
+    Salons.nbClientsConnected = 0;
 
 	if(argc != 2) {
 		perror("Invalid argument number : \n1 : Port");
@@ -94,7 +102,7 @@ int main(int argc, char const *argv[]){
     
     while(1){
         
-        if(nbClientsConnected <10){
+        if(Salons.nbClientsConnected <100){ //100 because 10 salons of 10 clients
             int socketClient1 = accept(dSock,(struct sockaddr*) &addrClient,&lg);
             printf("socketclient %d\n", socketClient1);
             if(socketClient1 < 0) {
@@ -103,23 +111,44 @@ int main(int argc, char const *argv[]){
 	        }
         
         
-
+            //Receive client's pseudo
             char clientPseudo[20];
             recv(socketClient1,&clientPseudo,sizeof(clientPseudo),0);
 
+            //Store it in a client struct
             struct ClientInfo client;
             strcpy(client.pseudo,clientPseudo);
             client.socket = socketClient1;
-            tabClients[nbClientsConnected] = client;
-            nbClientsConnected = nbClientsConnected + 1; 
 
+            //Send list of salon availabe to the client 
+            send(dSock,&Salons,sizeof(Salons),0);
+
+            //receive salon id from client to connect him to his salon 
+            struct connectToSalon salonToConnect;
+            recv(socketClient1,&salonToConnect,sizeof(salonToConnect),0);
+
+            //connect client to his salon
+            Salons.nbClientsConnected ++;
+            Salons.tabSalon[salonToConnect.idSalon].tabClients[Salons.tabSalon[salonToConnect.idSalon].nbClientsConnected] = client;
+            Salons.tabSalon[salonToConnect.idSalon].nbClientsConnected ++;
+
+            if(strcmp(salonToConnect.desc,"")!= 0){ //if we have a desc that mean we create a new salon
+                if (Salons.nbSalons <10){
+                    Salons.nbSalons ++;  //if we don't have 10 salons that mean we created a new salon
+                    Salons.tabSalon[salonToConnect.idSalon].desc = salonToConnect.desc;
+                }
+                Salons.nbSalonActive ++;
+                Salons.tabSalon[salonToConnect.idSalon].desc = salonToConnect.desc;
+            }
             
-        
-        
+            //create a struct to store cleitnand his salon;
+            struct clientSalon CS;
+            CS.client = client;
+            CS.idSalon = salonToConnect.idSalon;
             pthread_t PTh_ListenClient;
         
             //creating pthread
-            pthread_create(&PTh_ListenClient,NULL, listenAndForward,(void*) &client);
+            pthread_create(&PTh_ListenClient,NULL, listenAndForward,(void*) &CS);
         }
         
     } 

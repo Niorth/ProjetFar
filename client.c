@@ -85,6 +85,51 @@ int main(int argc, char const *argv[]) {
 
     //Send pseudo to the server
     send(dSock,&MyPseudo,strlen(MyPseudo),0);
+
+    //Receive list of salon from the server
+    struct listeSalon Salons;
+    recv(dSock,&Salons,sizeof(Salons),0);
+
+    struct connectToSalon myChoice;
+    printf("Choose an option (number of the action) \n");
+    if (Salons.nbSalonActive <10){
+        printf("-1: Create a salon \n");
+    }
+    for(int i = 0; i <Salons.nbSalons; i++){ //for print salons avalaible to the client
+        if(Salons.tabSalon[i].actif == 1){ //if the salon is active
+            if(Salons.tabSalon[i].nbClientsConnected < 10){ //if the salon is not full
+                printf("%d: %s \n",i, Salons.tabSalon[i].desc);
+            }
+        }
+    }
+
+    scanf("%d",myChoice.idSalon);
+
+    //if he want to create a new salon
+    if (myChoice.idSalon == -1){
+        printf("Entrez une description: \n");
+        fgets(myChoice.desc,200,stdin);
+
+        //We have to find an id available for his salon
+        if (Salons.nbSalons < 10){
+            myChoice.idSalon = Salons.nbSalons; //If all salons are not created we add a new salon
+        }else{
+            int salonId;
+            int j = 0;
+            while (Salons.tabSalon[j].actif != 0){
+                j++; // if a salon is inactif we take his slot 
+            }
+
+            salonId = j; 
+            myChoice.idSalon = salonId;
+        }
+    }
+
+    //We send our choice to the server
+    send(dSock,&myChoice,sizeof(myChoice),0);    
+
+
+
     //pthread uses for send and receive
     pthread_t PTh_send;
     pthread_t PTh_receive;
