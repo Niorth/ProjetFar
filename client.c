@@ -86,17 +86,17 @@ int main(int argc, char const *argv[]) {
     //Send pseudo to the server
     int res = send(dSock,&MyPseudo,strlen(MyPseudo),0);
     if (res < 0){
-        printf('erreur send \n');
+        printf("erreur send \n");
     }
     
     //Receive list of salon from the server
     struct listeSalon Salons;
-    int resRec = recv(dSock,&Salons,sizeof(struct listeSalon),0);
+    int resRec = recv(dSock,&Salons,sizeof(struct listeSalon*),0);
     if(resRec < 0){
-        printf('erreur rec \n');
+        printf("erreur rec \n");
     }
 
-    printf('%d',Salons.nbSalonActive);
+    printf("nb salon active: %d \n",Salons.nbSalonActive);
     struct connectToSalon myChoice;
     printf("Choose an option (number of the action) \n");
     if (Salons.nbSalonActive <10){

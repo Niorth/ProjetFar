@@ -55,6 +55,9 @@ int main(int argc, char const *argv[]){
 
     Salons.nbSalons = 0;
     Salons.nbClientsConnected = 0;
+    Salons.nbSalonActive = 0;
+    struct salon salons[10];
+    Salons.tabSalon = salons;
 
 	if(argc != 2) {
 		perror("Invalid argument number : \n1 : Port");
@@ -120,17 +123,19 @@ int main(int argc, char const *argv[]){
             strcpy(client.pseudo,clientPseudo);
             client.socket = socketClient1;
 
+            printf("pseudo: %s \n", clientPseudo);
+
             
             //Send list of salon availabe to the client 
-            int sendList = send(dSock,&Salons,sizeof(struct listeSalon),0);
+            int sendList = send(dSock,&Salons,sizeof(struct listeSalon*),0);
             if(sendList < 0){
-                printf('error send \n');
+                perror("error: ");
             }else{
-                printf('ok send \n');
+                printf("ok send \n");
             }
             //receive salon id from client to connect him to his salon 
             struct connectToSalon salonToConnect;
-            recv(socketClient1,&salonToConnect,sizeof(struct connectToSalon),0);
+            recv(socketClient1,&salonToConnect,sizeof(struct connectToSalon*),0);
 
             //connect client to his salon
             Salons.nbClientsConnected ++;
