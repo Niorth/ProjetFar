@@ -120,12 +120,17 @@ int main(int argc, char const *argv[]){
             strcpy(client.pseudo,clientPseudo);
             client.socket = socketClient1;
 
+            
             //Send list of salon availabe to the client 
-            send(dSock,&Salons,sizeof(Salons),0);
-
+            int sendList = send(dSock,&Salons,sizeof(struct listeSalon),0);
+            if(sendList < 0){
+                printf('error send \n');
+            }else{
+                printf('ok send \n');
+            }
             //receive salon id from client to connect him to his salon 
             struct connectToSalon salonToConnect;
-            recv(socketClient1,&salonToConnect,sizeof(salonToConnect),0);
+            recv(socketClient1,&salonToConnect,sizeof(struct connectToSalon),0);
 
             //connect client to his salon
             Salons.nbClientsConnected ++;
@@ -135,13 +140,13 @@ int main(int argc, char const *argv[]){
             if(strcmp(salonToConnect.desc,"")!= 0){ //if we have a desc that mean we create a new salon
                 if (Salons.nbSalons <10){
                     Salons.nbSalons ++;  //if we don't have 10 salons that mean we created a new salon
-                    Salons.tabSalon[salonToConnect.idSalon].desc = salonToConnect.desc;
+                    strcpy(Salons.tabSalon[salonToConnect.idSalon].desc, salonToConnect.desc); 
                 }
                 Salons.nbSalonActive ++;
-                Salons.tabSalon[salonToConnect.idSalon].desc = salonToConnect.desc;
+                strcpy(Salons.tabSalon[salonToConnect.idSalon].desc , salonToConnect.desc);
             }
             
-            //create a struct to store cleitnand his salon;
+            //create a struct to store client and his salon;
             struct clientSalon CS;
             CS.client = client;
             CS.idSalon = salonToConnect.idSalon;
