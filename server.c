@@ -56,8 +56,7 @@ int main(int argc, char const *argv[]){
     Salons.nbSalons = 0;
     Salons.nbClientsConnected = 0;
     Salons.nbSalonActive = 0;
-    struct salon salons[10];
-    Salons.tabSalon = salons;
+
 
 	if(argc != 2) {
 		perror("Invalid argument number : \n1 : Port");
