@@ -28,7 +28,7 @@ void* listenAndForward(void *ClientToListen){
         if(rcv == 0){
             break;
         }
-        
+
         struct messageFrom msgF;
         strcpy(msgF.msg,msg);
         strcpy(msgF.pseudo,pseudo);
@@ -37,14 +37,14 @@ void* listenAndForward(void *ClientToListen){
             if (Salons.tabSalon[mySalon].tabClients[i].socket != mySocket){
                 send(Salons.tabSalon[mySalon].tabClients[i].socket,&msgF,sizeof(msgF),0);
             }
-        } 
+        }
 
         if (strcmp(msg,"end\n") == 0){
             Salons.nbClientsConnected = Salons.nbClientsConnected - Salons.tabSalon[mySalon].nbClientsConnected; //we disconect all users of the salon when one ask to disconect
             Salons.tabSalon[mySalon].nbClientsConnected = 0;
             Salons.tabSalon[mySalon].actif = 0;
             Salons.nbSalonActive = Salons.nbSalonActive - 1;
-            
+
         }
     }
 }
@@ -77,7 +77,7 @@ int main(int argc, char const *argv[]){
     //Client IDs
     int ID_CLIENT_1 = 1;
     int ID_CLIENT_2 = 2;
-    
+
     //Open Connexion
     int dSock = socket(PF_INET,SOCK_STREAM,0);
 
@@ -101,9 +101,9 @@ int main(int argc, char const *argv[]){
     }
 
     printf("Server launched !\n");
-    
+
     while(1){
-        
+
         if(Salons.nbClientsConnected <100){ //100 because 10 salons of 10 clients
             int socketClient1 = accept(dSock,(struct sockaddr*) &addrClient,&lg);
             printf("socketclient %d\n", socketClient1);
@@ -111,8 +111,8 @@ int main(int argc, char const *argv[]){
 		        perror("Error while accepting first connection");
 		        exit(0);
 	        }
-        
-        
+
+
             //Receive client's pseudo
             char clientPseudo[20];
             recv(socketClient1,&clientPseudo,sizeof(clientPseudo),0);
@@ -124,44 +124,47 @@ int main(int argc, char const *argv[]){
 
             printf("pseudo: %s \n", clientPseudo);
 
-            
-            //Send list of salon availabe to the client 
-            int sendList = send(dSock,&Salons,sizeof(struct listeSalon*),0);
+
+            //Send list of salon availabe to the client
+            int sendList = send(socketClient1,&Salons,sizeof(struct listeSalon*),0);
             if(sendList < 0){
                 perror("error: ");
             }else{
                 printf("ok send \n");
             }
-            //receive salon id from client to connect him to his salon 
+            //receive salon id from client to connect him to his salon
             struct connectToSalon salonToConnect;
-            recv(socketClient1,&salonToConnect,sizeof(struct connectToSalon*),0);
+            recv(socketClient1,&salonToConnect,sizeof(salonToConnect),0);
+
 
             //connect client to his salon
             Salons.nbClientsConnected ++;
+            printf("%d\n",Salons.nbClientsConnected);
             Salons.tabSalon[salonToConnect.idSalon].tabClients[Salons.tabSalon[salonToConnect.idSalon].nbClientsConnected] = client;
             Salons.tabSalon[salonToConnect.idSalon].nbClientsConnected ++;
-
+            printf("%d\n",Salons.tabSalon[salonToConnect.idSalon].nbClientsConnected);
+            
             if(strcmp(salonToConnect.desc,"")!= 0){ //if we have a desc that mean we create a new salon
                 if (Salons.nbSalons <10){
                     Salons.nbSalons ++;  //if we don't have 10 salons that mean we created a new salon
-                    strcpy(Salons.tabSalon[salonToConnect.idSalon].desc, salonToConnect.desc); 
+                    strcpy(Salons.tabSalon[salonToConnect.idSalon].desc, salonToConnect.desc);
                 }
                 Salons.nbSalonActive ++;
                 strcpy(Salons.tabSalon[salonToConnect.idSalon].desc , salonToConnect.desc);
             }
-            
+
             //create a struct to store client and his salon;
             struct clientSalon CS;
             CS.client = client;
             CS.idSalon = salonToConnect.idSalon;
             pthread_t PTh_ListenClient;
-        
+
             //creating pthread
             pthread_create(&PTh_ListenClient,NULL, listenAndForward,(void*) &CS);
         }
-        
-    } 
-    
+
+    }
+
     close(dSock);
     return 0;
 }

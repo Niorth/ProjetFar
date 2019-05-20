@@ -18,7 +18,7 @@ void* sendToServer(void* socket){
     int sock = (int) socket;
     printf("You can write your messages \n");
     while(1){
-        fgets(msg,200,stdin); 
+        fgets(msg,200,stdin);
         send(sock,&msg,strlen(msg)+1,0);
         if(strcmp(msg,"end\n") == 0){
             break;
@@ -30,7 +30,7 @@ void* sendToServer(void* socket){
 }
 //function receive message from the server until the client receives end
 void* receiveFromServer(void * socket){
-    
+
     struct messageFrom msgF;
     int sock = (int) socket;
     while(1){
@@ -57,9 +57,9 @@ int main(int argc, char const *argv[]) {
     //IP address and port number
 	char* ip;
     ip = argv[1];
-	char* port; 
+	char* port;
     port = argv[2];
-    
+
     //struct uses for server connexion
     struct sockaddr_in addrServ;
     addrServ.sin_family=AF_INET;
@@ -67,7 +67,7 @@ int main(int argc, char const *argv[]) {
     addrServ.sin_port = htons((short) atoi(port));
     socklen_t igA = sizeof(struct sockaddr_in);
 
-    
+
 
     //Open Connexion
     int dSock = socket(PF_INET,SOCK_STREAM,0);
@@ -78,17 +78,17 @@ int main(int argc, char const *argv[]) {
     }
 
     printf("Connected ! \n");
-    
+
     char MyPseudo[20];
     printf("Enter your pseudo: \n");
-    fgets(MyPseudo,20,stdin); 
+    fgets(MyPseudo,20,stdin);
 
     //Send pseudo to the server
     int res = send(dSock,&MyPseudo,strlen(MyPseudo),0);
     if (res < 0){
         printf("erreur send \n");
     }
-    
+
     //Receive list of salon from the server
     struct listeSalon Salons;
     int resRec = recv(dSock,&Salons,sizeof(struct listeSalon*),0);
@@ -110,12 +110,14 @@ int main(int argc, char const *argv[]) {
         }
     }
 
-    scanf("%d",myChoice.idSalon);
+    scanf("%d",&myChoice.idSalon);
+
 
     //if he want to create a new salon
     if (myChoice.idSalon == -1){
         printf("Entrez une description: \n");
-        fgets(myChoice.desc,200,stdin);
+        //fgets(myChoice.desc,200,stdin);
+        scanf("%s",myChoice.desc);
 
         //We have to find an id available for his salon
         if (Salons.nbSalons < 10){
@@ -124,16 +126,16 @@ int main(int argc, char const *argv[]) {
             int salonId;
             int j = 0;
             while (Salons.tabSalon[j].actif != 0){
-                j++; // if a salon is inactif we take his slot 
+                j++; // if a salon is inactif we take his slot
             }
 
-            salonId = j; 
+            salonId = j;
             myChoice.idSalon = salonId;
         }
     }
 
     //We send our choice to the server
-    send(dSock,&myChoice,sizeof(myChoice),0);    
+    send(dSock,&myChoice,sizeof(myChoice),0);
 
 
 
