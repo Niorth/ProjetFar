@@ -91,7 +91,7 @@ int main(int argc, char const *argv[]) {
 
     //Receive list of salon from the server
     struct listeSalon Salons;
-    int resRec = recv(dSock,&Salons,sizeof(struct listeSalon*),0);
+    int resRec = recv(dSock,&Salons,sizeof(Salons),0);
     if(resRec < 0){
         printf("erreur rec \n");
     }
